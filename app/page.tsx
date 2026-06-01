@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { FileText, MessageSquare, PenLine, Sparkles, Loader2, ImageIcon, Shield } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { UploadCard } from "@/components/UploadCard";
 import { FilterPanel } from "@/components/FilterPanel";
 import { LatexPreview } from "@/components/LatexPreview";
@@ -110,8 +111,22 @@ export default function Page() {
     <main className="min-h-screen">
       <Header />
       <div className="max-w-[1400px] mx-auto px-6 pb-16">
-        <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6">
-          <aside className="space-y-4">
+        <motion.div
+          className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6"
+          initial="hidden"
+          animate="show"
+          variants={{
+            hidden: { opacity: 0 },
+            show: { opacity: 1, transition: { staggerChildren: 0.06 } }
+          }}
+        >
+          <motion.aside
+            className="space-y-4"
+            variants={{
+              hidden: { opacity: 0, y: 10 },
+              show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" } }
+            }}
+          >
             <Step n={1} title="Upload" />
             <UploadCard
               label="Handwriting sample"
@@ -150,14 +165,29 @@ export default function Page() {
                 </>
               )}
             </Button>
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-          </aside>
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.18 }}
+                >
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.aside>
 
-          <section className="glass-strong rounded-3xl gradient-border min-h-[78vh] flex flex-col overflow-hidden">
+          <motion.section
+            className="glass-strong rounded-3xl gradient-border min-h-[78vh] flex flex-col overflow-hidden"
+            variants={{
+              hidden: { opacity: 0, y: 10 },
+              show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } }
+            }}
+          >
             <Tabs value={tab} onValueChange={setTab} className="flex flex-col flex-1 min-h-0">
               <div className="flex items-center gap-3 px-4 pt-3">
                 <TabsList>
@@ -187,8 +217,8 @@ export default function Page() {
                 <HandwritingPreview state={renderTabState} onRender={renderHand} canRender={canRender} />
               </TabsContent>
             </Tabs>
-          </section>
-        </div>
+          </motion.section>
+        </motion.div>
       </div>
     </main>
   );
@@ -196,11 +226,20 @@ export default function Page() {
 
 function Header() {
   return (
-    <header className="max-w-[1400px] mx-auto px-6 pt-8 pb-6 flex items-center justify-between">
+    <motion.header
+      className="max-w-[1400px] mx-auto px-6 pt-8 pb-6 flex items-center justify-between"
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
       <div className="flex items-center gap-3">
-        <div className="size-9 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center shadow-glow">
+        <motion.div
+          className="size-9 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center shadow-glow"
+          whileHover={{ rotate: -6, scale: 1.06 }}
+          transition={{ type: "spring", stiffness: 320, damping: 18 }}
+        >
           <PenLine className="size-5 text-white" />
-        </div>
+        </motion.div>
         <div>
           <div className="text-lg font-semibold tracking-tight">Inkwell</div>
           <div className="text-[11px] text-muted-foreground -mt-0.5">handwritten homework, auto-drafted</div>
@@ -214,7 +253,7 @@ function Header() {
           <Shield className="size-3.5" /> never stored
         </span>
       </div>
-    </header>
+    </motion.header>
   );
 }
 
