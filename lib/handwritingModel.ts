@@ -13,7 +13,7 @@
 
 import { extractAnswers, answersToPlain } from "./answerExtractor";
 import { generateHandwritingWords, type WordImage } from "./handwritingProvider";
-import { composeAnsweredPdf } from "./pdfComposer";
+import { composeAnsweredPdfDetailed } from "./pdfComposer";
 
 export type RenderHandwritingInput = {
   handwritingSampleDataUrl: string;
@@ -64,27 +64,42 @@ export async function renderHandwriting(input: RenderHandwritingInput): Promise<
     wordImagesByAnswer.push(images);
   }
 
-  if (!process.env.HANDWRITING_SERVICE_URL) {
-    note = "One-DM not connected — using handwriting font fallback. Deploy modal/one_dm_app.py and set HANDWRITING_SERVICE_URL to enable real style cloning.";
+  const modelConnected = !!(process.env.HANDWRITING_TEXT_URL || process.env.HANDWRITING_SERVICE_URL);
+  if (!modelConnected) {
+    note = "One-DM not connected — using handwriting font fallback. Set HANDWRITING_TEXT_URL (+ HANDWRITING_API_TOKEN) to the deployed endpoint, or deploy modal/one_dm_app.py and set HANDWRITING_SERVICE_URL, to clone the uploaded sample's handwriting.";
   } else if (!usedModel) {
     note = "Handwriting service did not return images — fell back to the font.";
   }
 
   const originalPdf = dataUrlToBuffer(input.homeworkPdfDataUrl);
-  const pdfBytes = await composeAnsweredPdf({
+  const composed = await composeAnsweredPdfDetailed({
     originalPdf,
     answers,
     wordImagesByAnswer
   });
 
-  const out = Buffer.from(pdfBytes).toString("base64");
+  // Tell the user how the answers landed (in-place vs. on an appended page).
+  const placementNote = describePlacement(composed.placedInPlace, composed.appended);
+  note = [note, placementNote].filter(Boolean).join(" ");
+
+  const out = Buffer.from(composed.pdf).toString("base64");
   void answersToPlain; // exported for callers that want plaintext later
 
   return {
     outputDataUrl: `data:application/pdf;base64,${out}`,
     mimeType: "application/pdf",
-    note
+    note: note || undefined
   };
+}
+
+function describePlacement(placedInPlace: number, appended: number): string {
+  if (placedInPlace > 0 && appended === 0) {
+    return "Answers were written in place on the homework.";
+  }
+  if (placedInPlace > 0 && appended > 0) {
+    return `${placedInPlace} answer${placedInPlace === 1 ? "" : "s"} written in place; ${appended} added on an overflow page (no matching question found or not enough room).`;
+  }
+  return "Couldn't locate the questions on the PDF — answers were added on appended pages.";
 }
 
 function dataUrlToBuffer(dataUrl: string): Buffer {
